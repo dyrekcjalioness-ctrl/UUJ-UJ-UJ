@@ -1,10 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LIONESS — BUSINESS PREMIUM</title>
-
 <style>
 body {
     margin:0;
@@ -85,7 +85,6 @@ tr:nth-child(even){ background: rgba(255,255,255,0.05); }
 }
 </style>
 </head>
-
 <body>
 
 <header>
@@ -151,78 +150,90 @@ const form = document.getElementById("productForm");
 const table = document.getElementById("productTable");
 const totalProfitEl = document.getElementById("totalProfit");
 
-function renderProducts(){
-    table.innerHTML="";
+// Рендер таблиці
+function renderProducts() {
+    table.innerHTML = "";
     let totalProfit = 0;
 
-    products.forEach((p,index)=>{
+    products.forEach((p, index) => {
+        let warning = "";
+        let unitProfit = 0;
+        let total = 0;
 
-        let warning="";
-        let unitProfit=0;
-        let total=0;
-
-        if(p.quantityUnit !== p.buyUnit || p.quantityUnit !== p.sellUnit){
-            warning="⚠";
-        } else {
+        if (p.quantityUnit === p.buyUnit && p.quantityUnit === p.sellUnit) {
             unitProfit = p.sellPrice - p.buyPrice;
             total = unitProfit * p.quantity;
             totalProfit += total;
+        } else {
+            warning = "⚠";
         }
 
-        table.innerHTML+=`
+        table.innerHTML += `
         <tr>
-        <td>${p.name} ${warning}</td>
-        <td>${p.quantity} ${p.quantityUnit}</td>
-        <td>${p.buyPrice} zł (${p.buyUnit})</td>
-        <td>${p.sellPrice} zł (${p.sellUnit})</td>
-        <td>${unitProfit.toFixed(2)} zł</td>
-        <td>${total.toFixed(2)} zł</td>
-        <td>
-            <button onclick="editProduct(${index})">✏</button>
-            <button onclick="deleteProduct(${index})">❌</button>
-        </td>
+            <td>${p.name} ${warning}</td>
+            <td>${p.quantity} ${p.quantityUnit}</td>
+            <td>${p.buyPrice.toFixed(2)} zł (${p.buyUnit})</td>
+            <td>${p.sellPrice.toFixed(2)} zł (${p.sellUnit})</td>
+            <td>${unitProfit.toFixed(2)} zł</td>
+            <td>${total.toFixed(2)} zł</td>
+            <td>
+                <button onclick="editProduct(${index})">✏</button>
+                <button onclick="deleteProduct(${index})">❌</button>
+            </td>
         </tr>`;
     });
 
-    totalProfitEl.innerHTML="📊 Łączny zysk: "+ totalProfit.toFixed(2)+" zł";
+    totalProfitEl.innerHTML = "📊 Łączny zysk: " + totalProfit.toFixed(2) + " zł";
 }
 
-function deleteProduct(index){
-    products.splice(index,1);
+// Видалити продукт
+function deleteProduct(index) {
+    products.splice(index, 1);
     localStorage.setItem("lionessPremium", JSON.stringify(products));
     renderProducts();
 }
 
-function editProduct(index){
-    let p=products[index];
-    document.getElementById("name").value=p.name;
-    document.getElementById("quantity").value=p.quantity;
-    document.getElementById("quantityUnit").value=p.quantityUnit;
-    document.getElementById("buyPrice").value=p.buyPrice;
-    document.getElementById("buyUnit").value=p.buyUnit;
-    document.getElementById("sellPrice").value=p.sellPrice;
-    document.getElementById("sellUnit").value=p.sellUnit;
-    document.getElementById("editIndex").value=index;
+// Редагувати продукт
+function editProduct(index) {
+    const p = products[index];
+    document.getElementById("name").value = p.name;
+    document.getElementById("quantity").value = p.quantity;
+    document.getElementById("quantityUnit").value = p.quantityUnit;
+    document.getElementById("buyPrice").value = p.buyPrice;
+    document.getElementById("buyUnit").value = p.buyUnit;
+    document.getElementById("sellPrice").value = p.sellPrice;
+    document.getElementById("sellUnit").value = p.sellUnit;
+    document.getElementById("editIndex").value = index;
 }
 
-form.addEventListener("submit", function(e){
+// Додавання або оновлення продукту
+form.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const data={
-        name: name.value,
-        quantity: parseFloat(quantity.value),
-        quantityUnit: quantityUnit.value,
-        buyPrice: parseFloat(buyPrice.value),
-        buyUnit: buyUnit.value,
-        sellPrice: parseFloat(sellPrice.value),
-        sellUnit: sellUnit.value
+    const nameEl = document.getElementById("name");
+    const quantityEl = document.getElementById("quantity");
+    const quantityUnitEl = document.getElementById("quantityUnit");
+    const buyPriceEl = document.getElementById("buyPrice");
+    const buyUnitEl = document.getElementById("buyUnit");
+    const sellPriceEl = document.getElementById("sellPrice");
+    const sellUnitEl = document.getElementById("sellUnit");
+    const editIndexEl = document.getElementById("editIndex");
+
+    const data = {
+        name: nameEl.value,
+        quantity: parseFloat(quantityEl.value),
+        quantityUnit: quantityUnitEl.value,
+        buyPrice: parseFloat(buyPriceEl.value),
+        buyUnit: buyUnitEl.value,
+        sellPrice: parseFloat(sellPriceEl.value),
+        sellUnit: sellUnitEl.value
     };
 
-    if(editIndex.value===""){
+    if (editIndexEl.value === "") {
         products.push(data);
     } else {
-        products[editIndex.value]=data;
-        editIndex.value="";
+        products[editIndexEl.value] = data;
+        editIndexEl.value = "";
     }
 
     localStorage.setItem("lionessPremium", JSON.stringify(products));
@@ -230,20 +241,22 @@ form.addEventListener("submit", function(e){
     renderProducts();
 });
 
-function exportCSV(){
-    let csv="Nazwa,Ilość,Cena zakupu,Cena sprzedaży,Zysk całkowity\n";
-    products.forEach(p=>{
-        let profit=(p.sellPrice - p.buyPrice) * p.quantity;
-        csv+=`${p.name},${p.quantity} ${p.quantityUnit},${p.buyPrice},${p.sellPrice},${profit}\n`;
+// Експорт CSV
+function exportCSV() {
+    let csv = "Nazwa,Ilość,Cena zakupu,Cena sprzedaży,Zysk całkowity\n";
+    products.forEach(p => {
+        let profit = (p.sellPrice - p.buyPrice) * p.quantity;
+        csv += `${p.name},${p.quantity} ${p.quantityUnit},${p.buyPrice.toFixed(2)},${p.sellPrice.toFixed(2)},${profit.toFixed(2)}\n`;
     });
 
-    let blob=new Blob([csv],{type:"text/csv"});
-    let link=document.createElement("a");
-    link.href=URL.createObjectURL(blob);
-    link.download="lioness_raport.csv";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "lioness_raport.csv";
     link.click();
 }
 
+// Початковий рендер
 renderProducts();
 </script>
 
