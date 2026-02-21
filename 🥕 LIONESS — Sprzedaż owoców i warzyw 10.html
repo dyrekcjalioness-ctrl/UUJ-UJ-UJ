@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIONESS — BUSINESS PREMIUM</title>
+
+<style>
+body {
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+header {
+    text-align:center;
+    padding:30px;
+    font-size:24px;
+    font-weight:bold;
+    letter-spacing:2px;
+}
+
+.container {
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+form {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    padding:25px;
+    border-radius:15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    margin-bottom:30px;
+}
+
+input, select {
+    width:100%;
+    padding:10px;
+    margin:6px 0;
+    border:none;
+    border-radius:8px;
+}
+
+button {
+    background:#00c853;
+    border:none;
+    padding:10px 20px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+    margin-top:10px;
+    font-weight:bold;
+}
+
+button:hover { background:#00a844; }
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border-radius:15px;
+    overflow:hidden;
+}
+
+th, td {
+    padding:12px;
+    text-align:center;
+}
+
+th { background:#00c853; color:black; }
+
+tr:nth-child(even){ background: rgba(255,255,255,0.05); }
+
+.warning { color: #ff5252; font-weight:bold; }
+
+.total-profit {
+    margin-top:20px;
+    font-size:20px;
+    text-align:right;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+🥕 LIONESS — Sprzedaż owoców i warzyw
+</header>
+
+<div class="container">
+
+<form id="productForm">
+<input type="hidden" id="editIndex">
+
+<label>Nazwa</label>
+<input type="text" id="name" required>
+
+<label>Ilość</label>
+<input type="number" step="0.01" id="quantity" required>
+<select id="quantityUnit">
+<option value="kg">kg</option>
+<option value="szt">szt</option>
+</select>
+
+<label>Cena zakupu</label>
+<input type="number" step="0.01" id="buyPrice" required>
+<select id="buyUnit">
+<option value="kg">za kg</option>
+<option value="szt">za szt</option>
+</select>
+
+<label>Cena sprzedaży</label>
+<input type="number" step="0.01" id="sellPrice" required>
+<select id="sellUnit">
+<option value="kg">za kg</option>
+<option value="szt">za szt</option>
+</select>
+
+<button type="submit">Zapisz</button>
+<button type="button" onclick="exportCSV()">📁 Eksport do Excel</button>
+</form>
+
+<table>
+<thead>
+<tr>
+<th>Nazwa</th>
+<th>Ilość</th>
+<th>Cena zakupu</th>
+<th>Cena sprzedaży</th>
+<th>Zysk / jedn.</th>
+<th>Zysk całkowity</th>
+<th>Akcja</th>
+</tr>
+</thead>
+<tbody id="productTable"></tbody>
+</table>
+
+<div class="total-profit" id="totalProfit"></div>
+
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem("lionessPremium")) || [];
+
+const form = document.getElementById("productForm");
+const table = document.getElementById("productTable");
+const totalProfitEl = document.getElementById("totalProfit");
+
+function renderProducts(){
+    table.innerHTML="";
+    let totalProfit = 0;
+
+    products.forEach((p,index)=>{
+
+        let warning="";
+        let unitProfit=0;
+        let total=0;
+
+        if(p.quantityUnit !== p.buyUnit || p.quantityUnit !== p.sellUnit){
+            warning="⚠";
+        } else {
+            unitProfit = p.sellPrice - p.buyPrice;
+            total = unitProfit * p.quantity;
+            totalProfit += total;
+        }
+
+        table.innerHTML+=`
+        <tr>
+        <td>${p.name} ${warning}</td>
+        <td>${p.quantity} ${p.quantityUnit}</td>
+        <td>${p.buyPrice} zł (${p.buyUnit})</td>
+        <td>${p.sellPrice} zł (${p.sellUnit})</td>
+        <td>${unitProfit.toFixed(2)} zł</td>
+        <td>${total.toFixed(2)} zł</td>
+        <td>
+            <button onclick="editProduct(${index})">✏</button>
+            <button onclick="deleteProduct(${index})">❌</button>
+        </td>
+        </tr>`;
+    });
+
+    totalProfitEl.innerHTML="📊 Łączny zysk: "+ totalProfit.toFixed(2)+" zł";
+}
+
+function deleteProduct(index){
+    products.splice(index,1);
+    localStorage.setItem("lionessPremium", JSON.stringify(products));
+    renderProducts();
+}
+
+function editProduct(index){
+    let p=products[index];
+    document.getElementById("name").value=p.name;
+    document.getElementById("quantity").value=p.quantity;
+    document.getElementById("quantityUnit").value=p.quantityUnit;
+    document.getElementById("buyPrice").value=p.buyPrice;
+    document.getElementById("buyUnit").value=p.buyUnit;
+    document.getElementById("sellPrice").value=p.sellPrice;
+    document.getElementById("sellUnit").value=p.sellUnit;
+    document.getElementById("editIndex").value=index;
+}
+
+form.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const data={
+        name: name.value,
+        quantity: parseFloat(quantity.value),
+        quantityUnit: quantityUnit.value,
+        buyPrice: parseFloat(buyPrice.value),
+        buyUnit: buyUnit.value,
+        sellPrice: parseFloat(sellPrice.value),
+        sellUnit: sellUnit.value
+    };
+
+    if(editIndex.value===""){
+        products.push(data);
+    } else {
+        products[editIndex.value]=data;
+        editIndex.value="";
+    }
+
+    localStorage.setItem("lionessPremium", JSON.stringify(products));
+    form.reset();
+    renderProducts();
+});
+
+function exportCSV(){
+    let csv="Nazwa,Ilość,Cena zakupu,Cena sprzedaży,Zysk całkowity\n";
+    products.forEach(p=>{
+        let profit=(p.sellPrice - p.buyPrice) * p.quantity;
+        csv+=`${p.name},${p.quantity} ${p.quantityUnit},${p.buyPrice},${p.sellPrice},${profit}\n`;
+    });
+
+    let blob=new Blob([csv],{type:"text/csv"});
+    let link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download="lioness_raport.csv";
+    link.click();
+}
+
+renderProducts();
+</script>
+
+</body>
+</html>
